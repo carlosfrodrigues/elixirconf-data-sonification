@@ -1,0 +1,51 @@
+<!-- livebook:{"file_entries":[{"file":{"file_system_id":"local","file_system_type":"local","path":"/Users/carlos/Downloads/condicionamentos_lisboaaberta.csv"},"name":"condicionamentos_lisboaaberta.csv","type":"file"}]} -->
+
+# Data Sonification - Traffic Restrictions in Lisbon
+
+```elixir
+Mix.install([{:midiex, "~> 0.6.1"}, {:csv, "~> 2.4"}])
+```
+
+## Section
+
+```elixir
+out_port = Midiex.ports(:output) |> List.first()
+out_conn = Midiex.open(out_port)
+```
+
+```elixir
+midi_map = %{
+  "ACESSO DE VEÍCULOS À OBRA" => 72,
+  "CARGAS E DESCARGAS" => 74,
+  "CARGAS E DESCARGAS/OBRAS" => 76,
+  "DESFILE" => 77,
+  "EVENTO" => 79,
+  "ILUMINAÇÃO PÚBLICA" => 81,
+  "OBRA - FAIXA DE RODAGEM" => 83,
+  "OBRA - PASSEIO E ESTACION." => 84,
+  "OBRAS NO SUBSOLO - FAIXA DE RODAGEM" => 86,
+  "PINTURAS" => 88,
+  "PLANTAÇÃO / PODA DE ÁRVORES" => 89,
+  "RESERVA DE ESTACIONAMENTO" => 91
+}
+```
+
+```elixir
+play_note = fn note ->
+  Midiex.send_msg(out_conn, <<0x90, note, 127>>)
+  :timer.sleep(500)
+  Midiex.send_msg(out_conn, <<0x80, note, 127>>)
+end
+```
+
+```elixir
+File.stream!("condicionamentos_lisboaaberta.csv")
+|> CSV.decode(headers: true)
+|> Enum.map(fn row ->
+  {:ok, data} = row
+  note = midi_map[data["motivo"]]
+  if data["impacto"] == "Relevante", do: play_note.(note), else: play_note.(note - 36)
+end)
+```
+
+<!-- livebook:{"offset":1303,"stamp":{"token":"XCP.yivJUiOH1R6NS1zDvtZmRv6UgS-0QVaZ7Z6Lg4KcnzEPILN0UyoqrUCI_jYKGnJWC81y_O2kJtLCEb4mIbXofoDQWWQK1CxoYUNkvw","version":2}} -->
